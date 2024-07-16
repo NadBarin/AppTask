@@ -20,7 +20,7 @@ import numpy as np
 from backend_kivyagg import FigureCanvasKivyAgg
 
 db = Database()
-KV = '''
+KV = """
 <DrawerClickableItem@MDNavigationDrawerItem>
     focus_color: "#e7e4c0"
     text_color: "#fffafa"
@@ -175,77 +175,101 @@ MDScreen:
                     on_press:
                         nav_drawer.set_state("close")
                         screen_manager.current = "scr 2"
-'''
+"""
+
+
 class Tab(MDFloatLayout, MDTabsBase):
     pass
+
+
 class MenuHeader(MDBoxLayout):
     pass
 
-class ListItemWithCheckbox (TwoLineAvatarIconListItem):
+
+class ListItemWithCheckbox(TwoLineAvatarIconListItem):
     def __init__(self, pk=None, level=0, **kwargs):
         super().__init__(**kwargs)
         self.pk = pk
         self.level = level
-    def callback_for_Delete_task(self,bottom_sheet_menu,the_list_item):
-        data=db.delete_task(the_list_item.pk)
-        c=[]
-        a=[]
+
+    def callback_for_Delete_task(self, bottom_sheet_menu, the_list_item):
+        data = db.delete_task(the_list_item.pk)
+        c = []
+        a = []
         for i in range(len(self.parent.children)):
             a.append(self.parent.children[i].pk)
-        if (data!=0):
+        if data != 0:
             for i in range(len(a)):
                 for j in range(len(data)):
-                    if (a[i]==data[j][0]):
+                    if a[i] == data[j][0]:
                         c.append(int(i))
             for i in reversed(c):
                 self.parent.remove_widget(self.parent.children[i])
         self.parent.remove_widget(the_list_item)
         bottom_sheet_menu.dismiss()
 
-    def show_list_bottom_sheet(self,the_list_item):
+    def show_list_bottom_sheet(self, the_list_item):
         bottom_sheet_menu = MDBottomSheet()
-        #bottom_sheet_menu.add_widget(
+        # bottom_sheet_menu.add_widget(
         #    Button(
         #        text="Add Subtask", icon="plus", on_press=TaskManager().callback_for_Add_Subtask(bottom_sheet_menu, the_list_item)
         #    )
-        #)
-        #bottom_sheet_menu.add_widget(
+        # )
+        # bottom_sheet_menu.add_widget(
         #    Button(
         #        text="Delete task", icon="trash-can-outline",
         #        on_press=self.callback_for_Delete_task(bottom_sheet_menu, the_list_item)
         #    )
-        #)
+        # )
 
         bottom_sheet_menu.open()
         bottom_sheet_menu.sheet_list.ids.box_sheet_list.padding = (16, 0, 16, 0)
 
     def mark(self, check, the_list_item):
-        t = ''
+        t = ""
         for j in range(the_list_item.level):
-            t = t + '       '
+            t = t + "       "
         if check.active == True:
-            the_list_item.text = t+'[s]' + the_list_item.text[len(t):len(the_list_item.text)] + '[/s]'
-            db.mark_task_as_complete(the_list_item.pk, str(datetime.now().strftime('%A %d %B %Y')))# here
+            the_list_item.text = (
+                t
+                + "[s]"
+                + the_list_item.text[len(t) : len(the_list_item.text)]
+                + "[/s]"
+            )
+            db.mark_task_as_complete(
+                the_list_item.pk, str(datetime.now().strftime("%A %d %B %Y"))
+            )  # here
         else:
-            the_list_item.text = t+str(db.mark_task_as_incomplete(the_list_item.pk))# Here
-class LeftCheckbox(ILeftBodyTouch, MDCheckbox): #Custom left container
+            the_list_item.text = t + str(
+                db.mark_task_as_incomplete(the_list_item.pk)
+            )  # Here
+
+
+class LeftCheckbox(ILeftBodyTouch, MDCheckbox):  # Custom left container
     pass
+
+
 class DialogContent(MDBoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.ids.date_text.text = str(datetime.now().strftime('%A %d %B %Y'))
+        self.ids.date_text.text = str(datetime.now().strftime("%A %d %B %Y"))
+
     def show_date_picker(self):
         date_dialog = MDDatePicker()
         date_dialog.bind(on_save=self.on_save)
         date_dialog.open()
+
     def on_save(self, instance, value, date_range):
-        date = value.strftime('%A %d %B %Y')
+        date = value.strftime("%A %d %B %Y")
         self.ids.date_text.text = str(date)
+
+
 class TaskManager(MDApp):
-    f=0
-    l=0
-    pr=0
+    f = 0
+    l = 0
+    pr = 0
     task_list_dialog = None
+
     def build(self):
         self.theme_cls.primary_palette = "Cyan"
         self.theme_cls.theme_style = "Light"
@@ -257,31 +281,44 @@ class TaskManager(MDApp):
         TaskManager.pr = the_list_item.pk
         bottom_sheet_menu.dismiss()
         self.show_task_dialog()
+
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
-        if (tab_text=='Schedule'):
+        if tab_text == "Schedule":
             self.root.ids.layout.clear_widgets()
             self.print_gant_graph()
-        if (tab_text=='Productivity'):
+        if tab_text == "Productivity":
             self.root.ids.layout2.clear_widgets()
             self.print_prod_graph()
+
     def on_start(self):
         try:
-            t=''
+            t = ""
             tasks_view = db.get_tasks()
             for i in range(len(tasks_view)):
                 for j in range(tasks_view[i][5]):
-                    t=t+'       '
-                if (tasks_view[i][6]==0):
-                    add_task = ListItemWithCheckbox(pk=tasks_view[i][0], text=t+tasks_view[i][1], secondary_text=t+tasks_view[i][2],level=tasks_view[i][5])
+                    t = t + "       "
+                if tasks_view[i][6] == 0:
+                    add_task = ListItemWithCheckbox(
+                        pk=tasks_view[i][0],
+                        text=t + tasks_view[i][1],
+                        secondary_text=t + tasks_view[i][2],
+                        level=tasks_view[i][5],
+                    )
                     self.root.ids.container.add_widget(add_task)
                 else:
-                    add_task = ListItemWithCheckbox(pk=tasks_view[i][0], text=t+'[s]' + tasks_view[i][1] + '[/s]', secondary_text=t+tasks_view[i][2],level=tasks_view[i][5])
+                    add_task = ListItemWithCheckbox(
+                        pk=tasks_view[i][0],
+                        text=t + "[s]" + tasks_view[i][1] + "[/s]",
+                        secondary_text=t + tasks_view[i][2],
+                        level=tasks_view[i][5],
+                    )
                     add_task.ids.check.active = True
                     self.root.ids.container.add_widget(add_task)
-                t=''
+                t = ""
         except Exception as e:
             print(e)
             pass
+
     def show_task_dialog(self):
         TaskManager.task_list_dialog = None
         if not TaskManager.task_list_dialog:
@@ -291,63 +328,82 @@ class TaskManager(MDApp):
                 content_cls=DialogContent(),
             )
         TaskManager.task_list_dialog.open()
+
     def close_dialog(self):
         TaskManager.task_list_dialog.dismiss()
+
     def add_task(self, task, task_date):
-        if (self.f==0):
-            db.create_task(task.text, task_date,0,0,None)  # Here
+        if self.f == 0:
+            db.create_task(task.text, task_date, 0, 0, None)  # Here
             self.root.ids.container.clear_widgets()
             self.on_start()
         else:
-            db.create_task(task.text, task_date, TaskManager.pr,TaskManager.l,None)  # Here
+            db.create_task(
+                task.text, task_date, TaskManager.pr, TaskManager.l, None
+            )  # Here
             self.root.ids.container.clear_widgets()
             self.on_start()
-        TaskManager.f=0
-        task.text = ''
+        TaskManager.f = 0
+        task.text = ""
+
     def print_gant_graph(self):
-        tasks=[]
-        e=[]
-        end=[]
+        tasks = []
+        e = []
+        end = []
         try:
             uncomplete_tasks = []
             completed_tasks = []
             tasks_view = db.get_tasks()
             for i in range(len(tasks_view)):
-                if (tasks_view[i][6] == 1):
+                if tasks_view[i][6] == 1:
                     completed_tasks.append(tasks_view[i])
                 else:
                     uncomplete_tasks.append(tasks_view[i])
             if uncomplete_tasks != []:
                 for task in uncomplete_tasks:
                     tasks.append(task[1])
-                    en = datetime.strptime(task[2], '%A %d %B %Y')
+                    en = datetime.strptime(task[2], "%A %d %B %Y")
                     date = datetime.now()
-                    later = (en.date() - date.date())
+                    later = en.date() - date.date()
                     e.append(later / timedelta(days=1))
                     end.append(en)
                 e = np.array(e)
                 end = np.array(end)
                 fig, ax = plt.subplots(1, 1)
-                font_dictA = {"va": "center", "ha": "right", "rotation": 0, "wrap": True, "fontsize": 25}
-                font_dictB = {"va": "center", "ha": "right", "rotation": 90, "wrap": True, "fontsize": 25}
+                font_dictA = {
+                    "va": "center",
+                    "ha": "right",
+                    "rotation": 0,
+                    "wrap": True,
+                    "fontsize": 25,
+                }
+                font_dictB = {
+                    "va": "center",
+                    "ha": "right",
+                    "rotation": 90,
+                    "wrap": True,
+                    "fontsize": 25,
+                }
                 ax.barh(tasks, e, left=0)
-                xticks_labels = pd.date_range(date, end=end.max() + timedelta(days=1)).strftime("%m/%d/%y")
+                xticks_labels = pd.date_range(
+                    date, end=end.max() + timedelta(days=1)
+                ).strftime("%m/%d/%y")
                 xticks_minor = np.arange(0, e.max(), 1)
                 ax.set_yticks(tasks)
-                ax.set_yticklabels(labels=tasks, fontdict= font_dictA)
-                if (e.max() > 365 * 3):
-                    xticks = np.arange(0, e.max()+ 1, 365)
+                ax.set_yticklabels(labels=tasks, fontdict=font_dictA)
+                if e.max() > 365 * 3:
+                    xticks = np.arange(0, e.max() + 1, 365)
                     ax.set_xticks(xticks)
                     ax.set_xticklabels(xticks_labels[::365], fontdict=font_dictB)
-                elif (e.max() > 365):
-                    xticks = np.arange(0, e.max()+ 1, 90)
+                elif e.max() > 365:
+                    xticks = np.arange(0, e.max() + 1, 90)
                     ax.set_xticks(xticks)
                     ax.set_xticklabels(xticks_labels[::90], fontdict=font_dictB)
-                elif (e.max() >182):
+                elif e.max() > 182:
                     xticks = np.arange(0, e.max() + 1, 30)
                     ax.set_xticks(xticks)
                     ax.set_xticklabels(xticks_labels[::30], fontdict=font_dictB)
-                elif (e.max() > 30):
+                elif e.max() > 30:
                     xticks = np.arange(0, e.max() + 1, 7)
                     ax.set_xticks(xticks)
                     ax.set_xticks(xticks_minor, minor=True)
@@ -358,97 +414,119 @@ class TaskManager(MDApp):
                     ax.set_xticks(xticks_minor, minor=True)
                     ax.set_xticklabels(xticks_labels[::3], fontdict=font_dictB)
                 fig.tight_layout()
-                if ((len(tasks))>30):
-                    self.root.ids.layout.adaptive_height=False
-                    self.root.ids.layout.size_hint_y=None
-                    self.root.ids.layout.height = int((len(tasks))*(len(tasks)))
+                if (len(tasks)) > 30:
+                    self.root.ids.layout.adaptive_height = False
+                    self.root.ids.layout.size_hint_y = None
+                    self.root.ids.layout.height = int((len(tasks)) * (len(tasks)))
                 else:
                     self.root.ids.layout.height = self.root.height
                 self.root.ids.layout.add_widget(FigureCanvasKivyAgg(plt.gcf()))
         except Exception as e:
             print(e)
             pass
+
     def print_prod_graph(self):
         try:
-            k=0
+            k = 0
             completed_tasks = []
             tasks_view = db.get_tasks()
             for i in range(len(tasks_view)):
-                if (tasks_view[i][6] == 1):
+                if tasks_view[i][6] == 1:
                     completed_tasks.append(tasks_view[i])
             k = int(len(tasks_view))
-            if (completed_tasks != []):
-                plt.rcParams['font.size'] = '25'
-                t = [0,0,0,0]
+            if completed_tasks != []:
+                plt.rcParams["font.size"] = "25"
+                t = [0, 0, 0, 0]
                 dates = []
-                font_dictA = {"va": "top", "ha": "center", "rotation": 0, "wrap": True, "fontsize": 25}
+                font_dictA = {
+                    "va": "top",
+                    "ha": "center",
+                    "rotation": 0,
+                    "wrap": True,
+                    "fontsize": 25,
+                }
                 for task in completed_tasks:
                     dates.append(task[3])
                 fig, ax = plt.subplots(4, 1)
-                fig.suptitle('Сompleted tasks from all for', fontsize=30, fontweight='bold', fontdict= font_dictA)
+                fig.suptitle(
+                    "Сompleted tasks from all for",
+                    fontsize=30,
+                    fontweight="bold",
+                    fontdict=font_dictA,
+                )
                 for i in range(len(dates)):
-                    if (str(datetime.now().strftime('%A %d %B %Y'))==dates[i]):
+                    if str(datetime.now().strftime("%A %d %B %Y")) == dates[i]:
                         t[0] += 1
-                ax[0].bar(1,t[0])
+                ax[0].bar(1, t[0])
                 ax[0].FontSize = 25
-                ax[0].set_title('Day',fontdict= font_dictA)
+                ax[0].set_title("Day", fontdict=font_dictA)
                 today = datetime.today()
                 for i in range(len(dates)):
-                    if ((today - timedelta(datetime.weekday(today)) <= today) and (today + timedelta(6 - (datetime.weekday(today))) >= today)):
+                    if (today - timedelta(datetime.weekday(today)) <= today) and (
+                        today + timedelta(6 - (datetime.weekday(today))) >= today
+                    ):
                         t[1] += 1
-                ax[1].bar(1,  t[1])
-                ax[1].set_title('Week',fontdict= font_dictA)
+                ax[1].bar(1, t[1])
+                ax[1].set_title("Week", fontdict=font_dictA)
                 for i in range(len(dates)):
-                    en = datetime.strptime(dates[i], '%A %d %B %Y')
-                    if (en.month==datetime.today().month):
-                        t[2]+=1
+                    en = datetime.strptime(dates[i], "%A %d %B %Y")
+                    if en.month == datetime.today().month:
+                        t[2] += 1
                 ax[2].bar(1, t[2])
-                ax[2].set_title('Month',fontdict= font_dictA)
+                ax[2].set_title("Month", fontdict=font_dictA)
                 for i in range(len(dates)):
-                    en = datetime.strptime(dates[i], '%A %d %B %Y')
-                    if (en.year == datetime.today().year):
+                    en = datetime.strptime(dates[i], "%A %d %B %Y")
+                    if en.year == datetime.today().year:
                         t[3] += 1
                 ax[3].bar(1, t[3])
-                ax[3].set_title('Year',fontdict= font_dictA)
+                ax[3].set_title("Year", fontdict=font_dictA)
                 for i in range(4):
                     ax[i].set_xlim([0, 2])
                     ax[i].set_ylim([0, k])
-                    ax[i].locator_params(axis='x', nbins=2)
-                    ax[i].locator_params(axis='y', nbins=k + 1)
+                    ax[i].locator_params(axis="x", nbins=2)
+                    ax[i].locator_params(axis="y", nbins=k + 1)
                     ax[i].get_xaxis().set_visible(False)
-                    ax[i].text(x=1, y=int(k/2), s=str(round(((t[i]/k)*100),2))+'%', horizontalalignment = 'center', fontsize = 30)
-                if (k>1000):
-                    yticks = np.arange(0, k,1000)
+                    ax[i].text(
+                        x=1,
+                        y=int(k / 2),
+                        s=str(round(((t[i] / k) * 100), 2)) + "%",
+                        horizontalalignment="center",
+                        fontsize=30,
+                    )
+                if k > 1000:
+                    yticks = np.arange(0, k, 1000)
                     for i in range(4):
-                        if (k - yticks.max() < 1000):
+                        if k - yticks.max() < 1000:
                             yticks = np.delete(yticks, len(yticks) - 1)
                         yticks = np.append(yticks, k)
                         ax[i].set_yticks(yticks)
-                elif (k>100):
+                elif k > 100:
                     yticks = np.arange(0, k, 100)
-                    if (k-yticks.max()<100):
-                        yticks=np.delete(yticks,len(yticks)-1)
-                    yticks =np.append(yticks,k)
+                    if k - yticks.max() < 100:
+                        yticks = np.delete(yticks, len(yticks) - 1)
+                    yticks = np.append(yticks, k)
                     for i in range(4):
                         ax[i].set_yticks(yticks)
-                elif (k>20):
+                elif k > 20:
                     yticks = np.arange(0, k, 10)
-                    if (k-yticks.max()<5):
-                        yticks=np.delete(yticks,len(yticks)-1)
-                    yticks =np.append(yticks,k)
+                    if k - yticks.max() < 5:
+                        yticks = np.delete(yticks, len(yticks) - 1)
+                    yticks = np.append(yticks, k)
                     yticks_minor = np.arange(0, k, 5)
                     for i in range(4):
                         ax[i].set_yticks(yticks_minor, minor=True)
                         ax[i].set_yticks(yticks)
-                elif (k>5):
+                elif k > 5:
                     yticks = np.arange(0, k, 5)
                     yticks_minor = np.arange(0, k, 1)
                     for i in range(4):
                         ax[i].set_yticks(yticks_minor, minor=True)
                         ax[i].set_yticks(yticks)
-                #fig.tight_layout()
+                # fig.tight_layout()
                 self.root.ids.layout2.add_widget(FigureCanvasKivyAgg(plt.gcf()))
         except Exception as e:
             print(e)
             pass
+
+
 TaskManager().run()
